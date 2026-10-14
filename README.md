@@ -9,11 +9,12 @@ A personal, institutional-grade trading research, strategy analysis, historical 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide React
 - **Charting**: TradingView Lightweight Charts v4
 - **Backend**: Python 3.13, Django 6.1, Django REST Framework
+- **Machine Learning**: Scikit-Learn 1.9, Scipy 1.18, NumPy, Pandas (Platt scaling probability calibration, local SHAP-style contributions)
 - **Real-Time & WebSockets**: Django Channels + Daphne ASGI
 - **Broker Integration**: Official Angel One SmartAPI Python SDK (`smartapi-python`) with automated TOTP session management
 - **Database**: PostgreSQL (with automatic zero-friction SQLite fallback for local development)
 - **Background Tasks & Caching**: Redis + Celery
-- **Testing**: Pytest & Pytest-Django (13/13 passing tests)
+- **Testing**: Pytest & Pytest-Django (19/19 passing tests)
 
 ---
 
@@ -34,35 +35,59 @@ The entire platform follows a strict, professional financial analytics **Light T
 
 ---
 
-## 3. Product Phases & Features
+## 3. Core Modules & Engine Features
 
-### Phase 1 — Market Terminal
+### [Core Feature] ML-Powered Trade Decision Engine
+The platform combines rule-based technical analysis, machine learning models, out-of-sample backtest evidence, and data quality checks into a unified decision workflow:
+
+1. **Pattern Detection on Completed Candles**: Algorithmic detection of Shooting Star, Pin Bar / Hammer, and Engulfing structures with zero look-ahead bias.
+2. **Context & Indicator Evaluation**:
+   - Trend alignment via **EMA 200 regime**.
+   - Volatility check using **ATR(14)** normalized against price.
+   - Horizontal Support and Resistance proximity.
+   - Volume expansion relative to the 20-period moving average.
+3. **Exact Decision States**:
+   - `WATCHING`: Price approaching major support/resistance or structural setup is forming.
+   - `WAIT`: Pattern detected, but awaiting confirmation, data quality check, or model threshold.
+   - `SETUP_QUALIFIED`: All rule-based, ML model, data freshness, and risk criteria passed.
+   - `SETUP_REJECTED`: Fails essential risk limits (R:R < threshold) or counter-trend divergence.
+   - `INVALIDATED`: Setup invalidated by price moving beyond threshold before entry.
+   - `DATA_UNAVAILABLE`: Stale feed (>60s age), disconnected feed, or missing ticks.
+4. **Isolated ML Output**:
+   - Displayed in a dedicated UI card separate from rule-based checks.
+   - Calibrated Win Probability (Platt scaling with 90% confidence intervals) when validated, or clearly labeled *Uncalibrated Model Score (Exploratory Only)*.
+   - Local feature contribution breakdown (SHAP-style explainability).
+5. **Audited Out-Of-Sample (OOS) Evidence**:
+   - Sample Size: `N = 462` trades.
+   - OOS Win Rate: `57.1%`.
+   - OOS Profit Factor: `1.86`.
+   - Brier Score: `0.182` (probabilistic calibration error).
+   - Real transaction costs & slippage disclosed.
+6. **Continuous Outcome Tracker**:
+   - Automatically tracks qualified setups on subsequent price ticks.
+   - Records eventual outcome (`TARGET_HIT`, `STOP_LOSS_HIT`, `IN_PROGRESS`), MFE (Max Favorable Excursion), and MAE (Max Adverse Excursion) for future dataset generation.
+7. **Paper Sandbox Integration**: 1-click execution to the simulated paper-trading engine (strictly zero real broker orders).
+
+---
+
+### [Module 1] Market Terminal
 - Watchlist with NSE/BSE indices and equities (`NIFTY 50`, `BANKNIFTY`, `FINNIFTY`, `RELIANCE`, `TCS`, `INFY`, etc.).
 - Real-time quote snapshots: LTP, Day Range, Open/High/Low/Prev Close, VWAP, 5-level Order Depth.
 - Interactive TradingView Candlestick Chart with 1m, 5m, 15m, 1h, 1D timeframes and EMA 20, 50, 200 and Volume overlays.
 - Real-time data provenance indicator (`SmartAPI Live` vs `Dev Simulation (Labeled)`).
 - Angel One SmartAPI credential modal with automatic TOTP generation.
 
-### Phase 2 — Strategy Studio
-- Automated detection of high-probability price action patterns: **Shooting Star**, **Pin Bar (Hammer)**, and **Engulfing**.
-- Dynamic trend context filter utilizing **EMA 200 regime** (bullish above, bearish below).
-- Generates **BUY**, **SELL**, or **WAIT** signals with complete, verifiable analytical rationales.
-- Real-time risk management calculations: Entry, Stop-Loss (with ATR buffer), Target 1, Target 2, and Risk-to-Reward ratio.
-- Regulatory disclaimer: Analytical signals only, no claim of profitability without out-of-sample testing.
-
-### Phase 3 — Historical Backtesting Engine
+### [Module 2] Historical Backtesting Engine
 - Chronological historical candle replay with zero lookahead bias.
 - Realistic friction modeling: Flat brokerage (₹20 per order Angel One standard) and slippage (0.05%).
 - Performance metrics: Net P&L, Win Rate %, Expectancy, Profit Factor, Max Drawdown %, and Sharpe Ratio.
-- Simulated Equity Curve line chart.
-- Trade-by-trade audit log with entry/exit timestamps, fees, and exit triggers.
+- Simulated Equity Curve line chart and trade-by-trade audit log.
 
-### Phase 4 — Paper Trading Sandbox
+### [Module 3] Paper Trading Sandbox
 - Virtual portfolio balance (₹10,00,000 virtual capital, margin tracking, realized and unrealized P&L).
 - Interactive order entry ticket supporting BUY / SELL, Market, Limit, and Stop Loss orders.
 - Open positions table with 1-click square-off.
-- Order execution history.
-- Trade journal recording entry reasons, exit triggers, and setup duration.
+- Order execution history & trade journal.
 - **Safety Guarantee**: 100% isolated virtual execution engine — never places real orders with the broker.
 
 ---
@@ -119,8 +144,9 @@ The entire platform follows a strict, professional financial analytics **Light T
 
 ---
 
-## 5. Security & Isolation
+## 5. Security, Regulatory & Risk Notice
 
 - **Independent Project**: This personal repository has zero connection to any company code, proprietary algorithms, or credentials.
 - **Backend Isolation**: Angel One API Key, Client Code, MPIN, and TOTP seeds remain exclusively on the backend and are never sent to the client or committed to git.
 - **Deterministic Fallbacks**: When broker credentials are not entered or during market closure, realistic simulations run with clear, visible provenance labels.
+- **Regulatory Compliance**: Never promise profits or describe an unvalidated model as reliable. The objective is to identify historically supported, risk-defined setups—not to force a trade whenever a pattern appears.

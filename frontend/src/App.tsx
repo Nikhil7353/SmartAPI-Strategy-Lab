@@ -5,6 +5,7 @@ import { WatchlistPanel } from './components/terminal/WatchlistPanel';
 import { TradingViewChart } from './components/terminal/TradingViewChart';
 import { MarketDepthMini } from './components/terminal/MarketDepthMini';
 import { TimeframeBar } from './components/terminal/TimeframeBar';
+import { TradeDecisionEngineStudio } from './components/decision/TradeDecisionEngineStudio';
 import { StrategyStudio } from './components/strategy/StrategyStudio';
 import { BacktestStudio } from './components/backtesting/BacktestStudio';
 import { PaperTradingDashboard } from './components/papertrading/PaperTradingDashboard';
@@ -17,6 +18,7 @@ import {
   SmartApiAuthStatus,
   Timeframe,
   StrategySignal,
+  TradeDecision,
 } from './types';
 import {
   DEFAULT_WATCHLIST,
@@ -28,7 +30,7 @@ import {
 } from './api/client';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('terminal');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('decision');
   const [instruments, setInstruments] = useState<Instrument[]>(DEFAULT_WATCHLIST);
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument>(DEFAULT_WATCHLIST[0]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
@@ -111,6 +113,11 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSendToPaper = (levels: NonNullable<TradeDecision['tradeLevels']>, symbol: string) => {
+    // Switch to paper trading tab
+    setActiveTab('paper');
+  };
+
   const currentQuote = quotes[selectedInstrument.token];
   const activeLtp = currentQuote ? currentQuote.ltp : 0;
 
@@ -141,6 +148,16 @@ export const App: React.FC = () => {
 
         {/* Content Area */}
         <main className="flex-1 p-5 overflow-y-auto space-y-4">
+          {/* Active Tab: Core ML Trade Decision Engine */}
+          {activeTab === 'decision' && (
+            <TradeDecisionEngineStudio
+              activeInstrument={selectedInstrument}
+              timeframe={timeframe}
+              onSendToPaperTrading={handleSendToPaper}
+            />
+          )}
+
+          {/* Active Tab: Market Terminal */}
           {activeTab === 'terminal' && (
             <div className="flex flex-col gap-4 h-full">
               {/* Timeframe & Overlay Controls */}
@@ -191,6 +208,7 @@ export const App: React.FC = () => {
             </div>
           )}
 
+          {/* Active Tab: Strategy Studio (Patterns) */}
           {activeTab === 'strategy' && (
             <StrategyStudio
               symbol={selectedInstrument.symbol}
@@ -202,10 +220,12 @@ export const App: React.FC = () => {
             />
           )}
 
+          {/* Active Tab: Backtesting Studio */}
           {activeTab === 'backtest' && (
             <BacktestStudio currentSymbol={selectedInstrument.symbol} />
           )}
 
+          {/* Active Tab: Paper Trading */}
           {activeTab === 'paper' && (
             <PaperTradingDashboard
               activeInstrument={selectedInstrument}

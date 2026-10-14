@@ -57,19 +57,109 @@ export interface SmartApiAuthStatus {
   error?: string;
 }
 
-// Phase 2 Strategy Types
+// -------------------------------------------------------------
+// Core Feature: ML-Powered Trade Decision Engine Types
+// -------------------------------------------------------------
+export type DecisionState =
+  | 'WATCHING'
+  | 'WAIT'
+  | 'SETUP_QUALIFIED'
+  | 'SETUP_REJECTED'
+  | 'INVALIDATED'
+  | 'DATA_UNAVAILABLE';
+
+export interface EvidenceItem {
+  name: string;
+  status: 'PASSED' | 'FAILED' | 'WARNING';
+  description: string;
+  category: 'PRICE_ACTION' | 'TREND' | 'LEVELS' | 'VOLATILITY' | 'VOLUME' | 'MACHINE_LEARNING' | 'DATA_QUALITY';
+}
+
+export interface MLFeatureContribution {
+  feature: string;
+  value: number;
+  weight: number;
+  contribution: number;
+  impact: 'POSITIVE' | 'NEGATIVE';
+}
+
+export interface OOSMetrics {
+  modelVersion: string;
+  datasetPeriod: string;
+  sampleSizeN: number;
+  oosWinRate: number; // %
+  oosProfitFactor: number;
+  oosExpectancy: number; // INR
+  oosMaxDrawdown: number; // %
+  transactionCostsIncluded: string;
+  brierScore: number;
+  calibrationMethod: string;
+}
+
+export interface MLOutput {
+  modelScore: number;
+  isCalibrated: boolean;
+  label: string;
+  probability?: number | null;
+  confidenceInterval?: [number, number] | null;
+  featureContributions: MLFeatureContribution[];
+  modelVersion: string;
+  oosMetrics: OOSMetrics;
+}
+
+export interface TradeLevels {
+  entryPrice: number;
+  stopLoss: number;
+  target1: number;
+  target2: number;
+  riskRewardRatio: number;
+  riskPerUnit: number;
+  rewardPerUnit: number;
+  recommendedQuantity: number;
+  maxRiskAmount: number;
+}
+
+export interface TradeDecision {
+  id: string;
+  symbol: string;
+  timeframe: Timeframe;
+  state: DecisionState;
+  stateExplanation: string;
+  setupBias: 'LONG' | 'SHORT' | 'NEUTRAL';
+  pattern: string;
+  timestamp: string;
+  isCompletedCandle: boolean;
+  evidenceChecklist: EvidenceItem[];
+  tradeLevels?: TradeLevels | null;
+  mlOutput: MLOutput;
+  regulatoryNotice: string;
+  outcomeTracking: {
+    status: string;
+    datasetEligible: boolean;
+  };
+}
+
+export interface TrackedOutcome {
+  id: string;
+  symbol: string;
+  pattern: string;
+  setupBias: string;
+  entryPrice: number;
+  stopLoss: number;
+  target1: number;
+  target2: number;
+  detectedAt: string;
+  outcome: 'TARGET_HIT' | 'STOP_LOSS_HIT' | 'IN_PROGRESS' | 'EXPIRED';
+  realizedPnl: number;
+  mfe: number; // Max Favorable Excursion (points)
+  mae: number; // Max Adverse Excursion (points)
+  mlPredictedProb: number;
+  evaluatedDatasetEligible: boolean;
+}
+
+// Phase 2 Strategy Types (Legacy)
 export type PatternType = 'SHOOTING_STAR' | 'PIN_BAR_HAMMER' | 'BULLISH_ENGULFING' | 'BEARISH_ENGULFING' | 'DOJI' | 'BREAKOUT';
 export type SignalAction = 'BUY' | 'SELL' | 'WAIT';
-
-export interface StrategyPatternMatch {
-  pattern: PatternType;
-  name: string;
-  timestamp: number;
-  candleIndex: number;
-  confidence: number; // 0 to 100
-  isBullish: boolean;
-  price: number;
-}
 
 export interface StrategySignal {
   id: string;
@@ -97,8 +187,8 @@ export interface BacktestParams {
   endDate: string;
   initialCapital: number;
   riskPercentage: number;
-  brokeragePerOrder: number; // Flat e.g. 20 INR
-  slippagePercent: number; // e.g. 0.05%
+  brokeragePerOrder: number;
+  slippagePercent: number;
   enableShootingStar: boolean;
   enablePinBar: boolean;
   enableEngulfing: boolean;
@@ -133,9 +223,9 @@ export interface BacktestResult {
   totalTrades: number;
   winningTrades: number;
   losingTrades: number;
-  winRate: number; // percentage e.g. 58.2
+  winRate: number;
   profitFactor: number;
-  expectancy: number; // average PnL per trade
+  expectancy: number;
   maxDrawdown: number;
   maxDrawdownPercent: number;
   sharpeRatio: number;

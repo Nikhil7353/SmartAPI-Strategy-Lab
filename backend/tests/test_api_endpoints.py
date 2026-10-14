@@ -85,3 +85,23 @@ def test_paper_trading_endpoints(api_client):
     res_ord = api_client.post('/api/paper/orders/', order_payload, format='json')
     assert res_ord.status_code == 200
     assert res_ord.json()['status'] == 'EXECUTED'
+
+@pytest.mark.django_db
+def test_strategy_decision_engine_endpoint(api_client):
+    response = api_client.get('/api/strategies/decision/?symbol=RELIANCE&timeframe=15m&token=2885')
+    assert response.status_code == 200
+    data = response.json()
+    assert 'state' in data
+    assert data['state'] in ('WATCHING', 'WAIT', 'SETUP_QUALIFIED', 'SETUP_REJECTED', 'INVALIDATED', 'DATA_UNAVAILABLE')
+    assert 'evidenceChecklist' in data
+    assert 'mlOutput' in data
+    assert 'regulatoryNotice' in data
+
+@pytest.mark.django_db
+def test_strategy_outcomes_endpoint(api_client):
+    response = api_client.get('/api/strategies/outcomes/')
+    assert response.status_code == 200
+    data = response.json()
+    assert 'outcomes' in data
+    assert 'summary' in data
+    assert len(data['outcomes']) > 0
