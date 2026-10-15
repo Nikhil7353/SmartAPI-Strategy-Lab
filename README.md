@@ -1,4 +1,4 @@
-# NiK Trade Desk — Personal SmartAPI Trading Strategy & Research Platform
+#    Trade Desk — Personal SmartAPI Trading Strategy & Research Platform
 
 A personal, institutional-grade trading research, strategy analysis, historical backtesting, and paper-trading platform built exclusively with **Angel One SmartAPI** (not Zerodha Kite).
 
